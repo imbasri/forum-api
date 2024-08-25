@@ -29,6 +29,7 @@ Route.group(() => {
   Route.post('/auth/register', 'AuthController.register')
   Route.post('/auth/login', 'AuthController.login')
 
+  Route.get('/threads', 'ThreadsController.index')
   Route.post('/threads', 'ThreadsController.store').middleware('auth')
   Route.get('/threads/:id', 'ThreadsController.show')
 
