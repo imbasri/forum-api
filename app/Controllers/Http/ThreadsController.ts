@@ -46,9 +46,16 @@ export default class ThreadsController {
       })
     }
   }
-  public async update({ params, request, response }: HttpContextContract) {
+  public async update({ params,auth, request, response }: HttpContextContract) {
     try {
+      const user = auth.user
       const thread = await Thread.findOrFail(params.id)
+
+      if (user?.id !== thread.userId) {
+        return response.status(403).json({
+          message: 'You are not authorized to update this thread',
+        })
+      }
       const validateData = await request.validate(ThreadValidator)
       await thread.merge(validateData).save()
       // return data dari model category , user dari belongsTo
@@ -64,9 +71,15 @@ export default class ThreadsController {
     }
   }
 
-  public async destroy({ params, response }: HttpContextContract) {
+  public async destroy({ params,auth, response }: HttpContextContract) {
     try {
+      const user = auth.user
       const thread = await Thread.findOrFail(params.id)
+      if (user?.id !== thread.userId) {
+        return response.status(403).json({
+          message: 'You are not authorized to delete this thread',
+        })
+      }
       await thread.delete()
       return response.status(200).json({
         message: 'Thread deleted successfully',
