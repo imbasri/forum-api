@@ -7,6 +7,7 @@ export default class ThreadsController {
     try {
       const thread = await Thread.query()
         .preload('user', (userQuery) => userQuery.select('id', 'name', 'email'))
+        .preload('replies')
         .preload('category')
       return response.status(200).json({ data: thread })
     } catch (error) {
@@ -36,6 +37,7 @@ export default class ThreadsController {
         .where('id', params.id)
         .preload('user')
         .preload('category')
+        .preload('replies')
         .firstOrFail()
       return response.status(200).json({
         data: thread,
