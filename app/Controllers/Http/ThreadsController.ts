@@ -7,7 +7,12 @@ export default class ThreadsController {
     try {
       const pages = request.input('page', 1)
       const sizes = request.input('size', 10)
+      const userId = request.input('user_id')
+      const categoryId = request.input('category_id')
       const thread = await Thread.query()
+      // filter user dan category
+        .if(userId, (query) => query.where('user_id', userId))
+        .if(categoryId, (query) => query.where('category_id', categoryId))
         .preload('user', (userQuery) => userQuery.select('id', 'name', 'email'))
         .preload('replies')
         .preload('category').paginate(pages, sizes)
