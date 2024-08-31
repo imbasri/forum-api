@@ -24,7 +24,7 @@ export default class ReplyValidator {
    *    ```
    */
   public schema = schema.create({
-    content: schema.string({
+      content: schema.string({
       trim: true,
     }),
   })
