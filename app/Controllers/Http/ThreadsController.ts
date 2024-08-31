@@ -1,10 +1,11 @@
 import type { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
+import UnauthorizedException from 'App/Exceptions/UnauthorizedException'
 import Thread from 'App/Models/Thread'
 import SortThreadValidator from 'App/Validators/SortThreadValidator'
 import ThreadValidator from 'App/Validators/ThreadValidator'
 
 export default class ThreadsController {
-  public async index({ request,response }: HttpContextContract) {
+  public async index({ request, response }: HttpContextContract) {
     try {
       const pages = request.input('page', 1)
       const sizes = request.input('size', 10)
@@ -15,15 +16,15 @@ export default class ThreadsController {
       const sortBy = sortValidated.sort_by || 'id'
       const order = sortValidated.order || 'asc'
 
-
       const thread = await Thread.query()
-      // filter user dan category
+        // filter user dan category
         .if(userId, (query) => query.where('user_id', userId))
         .if(categoryId, (query) => query.where('category_id', categoryId))
         .orderBy(sortBy, order)
         .preload('user', (userQuery) => userQuery.select('id', 'name', 'email'))
         .preload('replies')
-        .preload('category').paginate(pages, sizes)
+        .preload('category')
+        .paginate(pages, sizes)
       return response.status(200).json({ data: thread })
     } catch (error) {
       return response.status(500).json({
@@ -63,15 +64,17 @@ export default class ThreadsController {
       })
     }
   }
-  public async update({ params,auth, request, response }: HttpContextContract) {
+  public async update({ params, auth, request, response }: HttpContextContract) {
     try {
       const user = auth.user
       const thread = await Thread.findOrFail(params.id)
 
       if (user?.id !== thread.userId) {
-        return response.status(403).json({
-          message: 'You are not authorized to update this thread',
-        })
+        throw new UnauthorizedException(
+          'You are not authorized to update this thread',
+          403,
+          'E_UNAUTHORIZED_ACCESS'
+        )
       }
       const validateData = await request.validate(ThreadValidator)
       await thread.merge(validateData).save()
@@ -82,29 +85,43 @@ export default class ThreadsController {
         data: thread,
       })
     } catch (error) {
-      return response.status(404).json({
-        message: 'Thread not found',
-      })
+      if (error.name === 'UnauthorizedException') {
+        return response.status(error.status).json({
+          message: error.message,
+        })
+      } else {
+        return response.status(404).json({
+          data: 'Thread not found',
+        })
+      }
     }
   }
 
-  public async destroy({ params,auth, response }: HttpContextContract) {
+  public async destroy({ params, auth, response }: HttpContextContract) {
     try {
       const user = auth.user
       const thread = await Thread.findOrFail(params.id)
       if (user?.id !== thread.userId) {
-        return response.status(403).json({
-          message: 'You are not authorized to delete this thread',
-        })
+        throw new UnauthorizedException(
+          'You are not authorized to update this thread',
+          403,
+          'E_UNAUTHORIZED_ACCESS'
+        )
       }
       await thread.delete()
       return response.status(200).json({
         message: 'Thread deleted successfully',
       })
     } catch (error) {
-      return response.status(404).json({
-        message: 'Thread not found',
-      })
+      if (error.name === 'UnauthorizedException') {
+        return response.status(error.status).json({
+          message: error.message,
+        })
+      } else {
+        return response.status(404).json({
+          data: 'Thread not found',
+        })
+      }
     }
   }
 }
